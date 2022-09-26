@@ -1,0 +1,76 @@
+---
+title: "Practical machine learning project"
+author: "Toky"
+date: "26 septembre 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. The random forest algorithm has been choosen because it is accurate. The confusion matrix from the output of the model using validation data set from partition of training data (30 percent of training data) displays an accuracy of .98.
+
+###Download data
+```{r}
+if (!file.exists("pml-training.csv")){
+  download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "pml-training.csv")
+}
+if (!file.exists("pml-testing.csv")){
+  download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile = "pml-testing.csv")
+}
+```
+###Read data
+```{r}
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+```
+
+### data pre-pocessing
+loading useful package
+```{r, results="hide"}
+library(caret)
+library(randomForest)
+```
+
+the first seven column is removed because they are meaningless effect on output. All columns that have more than 20 percent of missiong values are removed and those who have a variance near to zero are also removed from predictors.
+```{r}
+training <- training[,-(1:7)]
+toRemove <-nearZeroVar(training)
+training <- training [,-toRemove]
+training <- training [, colSums(is.na(training))< .8]
+testing <- testing[,names(testing) %in% names (training)]
+```
+
+### Slice data
+```{r}
+set.seed(1)
+partition <- createDataPartition(training$classe, p =.7,list = FALSE)
+train <- training[partition,]
+test <- training[-partition,]
+```
+
+###Random forest model
+The random foerst algorithm has been choosen because the aim is to predict and not to interpret the effect of variables. So this algorithm offers a better accuracy compared to other algorithm.Due to limitation in computation power and memory, the number of tree is defined to 10
+```{r, cache=TRUE}
+model <-train(classe~.,data = train,method ="rf", ntree = 10)
+model
+```
+
+###Confusion matrix
+```{r}
+pred <- predict(model,test)
+confusionMatrix(pred,as.factor(test$classe))
+
+```
+the model have an prediction accuracy of .98 based on the validation data (30 percent of data)
+
+### Prediction 
+The model from random forest algorithm is used to predict the classe in testing data
+```{r}
+prediction <- predict(model,testing)
+prediction
+```
+
+
